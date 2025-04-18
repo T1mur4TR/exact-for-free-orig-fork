@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-import faiss
+#import faiss
 import numpy as np
 import torch
 
@@ -95,7 +95,7 @@ class TorchIndexL2:
 
 class KNNIndex:
     BACKENDS = {
-        "faiss": faiss.IndexFlatL2,
+#        "faiss": faiss.IndexFlatL2,
         "numpy": NumpyIndexL2,
         "torch": TorchIndexL2
     }

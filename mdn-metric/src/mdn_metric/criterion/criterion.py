@@ -13,6 +13,8 @@ from .multisim import MultiSimilarityLoss
 from .proxynca import ProxyNCALoss
 from .relaxation import Relaxed01Loss
 from .polyloss import Poly1CrossEntropyLoss
+from .exaqoot import EXAQOOT
+from .gex import GEX
 
 
 class Criterion(torch.nn.Module):
@@ -44,6 +46,8 @@ class Criterion(torch.nn.Module):
                            exact_weight=0.0, exact_sample_size=64,
                            exact_robust_dims=None, exact_truncated=False,
                            exact_margin=None, exact_aggregation="mean",
+                           exaqoot_weight=0.0, exaqoot_sample_size=256, exaqoot_margin=None,
+                           gex_weight=0.0, gex_margin=None, gex_smoothing=None,
                            reloss_weight=0.0):
         """Get optimizer parameters.
 
@@ -79,6 +83,12 @@ class Criterion(torch.nn.Module):
             ("exact_truncated", exact_truncated),
             ("exact_margin", exact_margin),
             ("exact_aggregation", exact_aggregation),
+            ("exaqoot_weight", exaqoot_weight),
+            ("exaqoot_sample_size", exaqoot_sample_size),
+            ("exaqoot_margin", exaqoot_margin),
+            ("gex_weight", gex_weight),
+            ("gex_margin", gex_margin),
+            ("gex_smoothing", gex_smoothing),
             ("reloss_weight", reloss_weight)
         ])
 
@@ -93,6 +103,10 @@ class Criterion(torch.nn.Module):
             self._relaxed01 = Relaxed01Loss(self._config["relaxed01_type"])
         if self._config["polyloss_weight"] > 0:
             self._polyloss = Poly1CrossEntropyLoss(reduction="mean", epsilon=self._config["polyloss_epsilon"])
+        if self._config["exaqoot_weight"] > 0:
+            self._exaqoot = EXAQOOT(sample_size=self._config["exaqoot_sample_size"], batch_norm=False, margin=self._config["exaqoot_margin"])
+        if self._config["gex_weight"] > 0:
+            self._gex = GEX(batch_norm=False, margin=self._config["gex_margin"], label_smoothing=self._config["gex_smoothing"])
         self.distribution = None
         self.scorer = None
 
@@ -175,6 +189,13 @@ class Criterion(torch.nn.Module):
 
         if self._config["polyloss_weight"] != 0:
             loss = loss + self._config["polyloss_weight"] * self._polyloss(logits, labels)
+
+        if self._config["exaqoot_weight"] > 0:
+            loss = loss + self._config["exaqoot_weight"] * self._exaqoot(logits, labels, torch.sqrt(final_variance))
+
+        if self._config["gex_weight"] > 0:
+            loss = loss + self._config["gex_weight"] * self._gex(logits, labels, torch.sqrt(final_variance))
+
         return loss
 
     def _xent_loss(self, logits, labels):
