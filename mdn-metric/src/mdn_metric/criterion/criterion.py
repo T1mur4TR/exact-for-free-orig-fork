@@ -13,8 +13,9 @@ from .multisim import MultiSimilarityLoss
 from .proxynca import ProxyNCALoss
 from .relaxation import Relaxed01Loss
 from .polyloss import Poly1CrossEntropyLoss
-from .exaqoot import EXAQOOT
+from .exaqoot import EXAQOOT, CauchyEXAQOOT
 from .gex import GEX
+from .douce import DOUCE
 
 
 class Criterion(torch.nn.Module):
@@ -32,6 +33,11 @@ class Criterion(torch.nn.Module):
         logits: Tensor with classification logits (B, C) or (B, N, C), matching embeddings shape.
     """
 
+    EXAQOOT_DISTRIBUTIONS = {
+        "normal": EXAQOOT,
+        "cauchy": CauchyEXAQOOT
+    }
+
     @staticmethod
     def get_default_config(use_softmax=True, logits_batchnorm=False, xent_weight=1.0, xent_smoothing=0.0,
                            hinge_weight=0.0, hinge_margin=1.0,
@@ -47,7 +53,10 @@ class Criterion(torch.nn.Module):
                            exact_robust_dims=None, exact_truncated=False,
                            exact_margin=None, exact_aggregation="mean",
                            exaqoot_weight=0.0, exaqoot_sample_size=256, exaqoot_margin=None,
+                           exaqoot_distribution="normal",
                            gex_weight=0.0, gex_margin=None, gex_smoothing=None,
+                           douce_weight=0.0, douce_delta=.3, douce_smoothing=0., 
+                           douce_soft_labels_correction=None,
                            reloss_weight=0.0):
         """Get optimizer parameters.
 
@@ -86,9 +95,14 @@ class Criterion(torch.nn.Module):
             ("exaqoot_weight", exaqoot_weight),
             ("exaqoot_sample_size", exaqoot_sample_size),
             ("exaqoot_margin", exaqoot_margin),
+            ("exaqoot_distribution", exaqoot_distribution),
             ("gex_weight", gex_weight),
             ("gex_margin", gex_margin),
             ("gex_smoothing", gex_smoothing),
+            ("douce_weight", douce_weight),
+            ("douce_delta", douce_delta),
+            ("douce_smoothing", douce_smoothing),
+            ("douce_soft_labels_correction", douce_soft_labels_correction),
             ("reloss_weight", reloss_weight)
         ])
 
@@ -104,9 +118,11 @@ class Criterion(torch.nn.Module):
         if self._config["polyloss_weight"] > 0:
             self._polyloss = Poly1CrossEntropyLoss(reduction="mean", epsilon=self._config["polyloss_epsilon"])
         if self._config["exaqoot_weight"] > 0:
-            self._exaqoot = EXAQOOT(sample_size=self._config["exaqoot_sample_size"], batch_norm=False, margin=self._config["exaqoot_margin"])
+            self._exaqoot = self.EXAQOOT_DISTRIBUTIONS[self._config["exaqoot_distribution"]](sample_size=self._config["exaqoot_sample_size"], batch_norm=False, margin=self._config["exaqoot_margin"])
         if self._config["gex_weight"] > 0:
             self._gex = GEX(batch_norm=False, margin=self._config["gex_margin"], label_smoothing=self._config["gex_smoothing"])
+        if self._config["douce_weight"] > 0:
+            self._douce = DOUCE(batch_norm=False, delta=self._config["douce_delta"], label_smoothing=self._config["douce_smoothing"], soft_labels_correction=self._config["douce_soft_labels_correction"])
         self.distribution = None
         self.scorer = None
 
@@ -195,6 +211,9 @@ class Criterion(torch.nn.Module):
 
         if self._config["gex_weight"] > 0:
             loss = loss + self._config["gex_weight"] * self._gex(logits, labels, torch.sqrt(final_variance))
+
+        if self._config["douce_weight"] > 0:
+            loss = loss + self._config["douce_weight"] * self._douce(logits, labels, sigma=torch.sqrt(final_variance))
 
         return loss
 

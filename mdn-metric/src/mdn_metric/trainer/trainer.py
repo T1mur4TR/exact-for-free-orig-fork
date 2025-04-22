@@ -10,6 +10,7 @@ from .optimizer import SGDOptimizer, RMSpropOptimizer, AdamOptimizer, AdamWOptim
 from .scheduler import StepScheduler, MultiStepScheduler, PlateauScheduler, WarmupScheduler, ExponentialScheduler
 from .variance_scheduler import ExponentSTDSchedulerCallback
 from .weight_kld_scheduler import KLDSchedulerCallback
+from .delta_scheduler import ExponentDeltaSchedulerCallback
 
 
 class Trainer:
@@ -38,6 +39,10 @@ class Trainer:
         "linear": KLDSchedulerCallback
     }
 
+    DELTA_SCHEDULERS = {
+        "exponential": ExponentDeltaSchedulerCallback
+    }
+
     @staticmethod
     def get_default_config(num_epochs=16,
                            optimizer_type="sgd", optimizer_params=None, classifier_optimizer_params=None,
@@ -45,6 +50,7 @@ class Trainer:
                            scheduler_type=None, scheduler_params=None,
                            variance_scheduler_type=None, variance_scheduler_params=None,
                            kld_scheduler_type=None, kld_scheduler_params=None,
+                           delta_scheduler_type=None, delta_scheduler_params=None,
                            warmup_epochs=0,
                            selection_dataset="train", selection_metric="loss", selection_minimize=True,
                            early_stop_patience=None, early_stop_epsilon=1e-3):
@@ -86,6 +92,8 @@ class Trainer:
             ("variance_scheduler_params", variance_scheduler_params),
             ("kld_scheduler_type", kld_scheduler_type),
             ("kld_scheduler_params", kld_scheduler_params),
+            ("delta_scheduler_type", delta_scheduler_type),
+            ("delta_scheduler_params", delta_scheduler_params),
             ("warmup_epochs", warmup_epochs),
             ("selection_dataset", selection_dataset),
             ("selection_metric", selection_metric),
@@ -167,6 +175,10 @@ class Trainer:
         if self._config["kld_scheduler_type"] is not None:
             callbacks["kld_scheduler"] = self.KLD_SCHEDULERS[self._config["kld_scheduler_type"]](
                 self._config["num_epochs"], config=self._config["kld_scheduler_params"])
+        if self._config["delta_scheduler_type"] is not None:
+            callbacks["delta_scheduler"] = self.DELTA_SCHEDULERS[self._config["delta_scheduler_type"]](
+                self._config["num_epochs"], config=self._config["delta_scheduler_params"]
+            )
         if self._config["early_stop_patience"] is not None:
             callbacks["early_stop"] = dl.EarlyStoppingCallback(
                 patience=self._config["early_stop_patience"],

@@ -30,4 +30,4 @@ class GEX(torch.nn.Module):
             loss = loss.mean()
         elif self._reduction == 'sum':
             loss = loss.sum()
-        return loss #scale_grad(loss, sigma**2) # <- gradient normalization
+        return 1. + loss #scale_grad(loss, sigma**2) # <- gradient normalization

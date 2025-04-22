@@ -1,0 +1,37 @@
+model_params:
+  classifier_params:
+    use_variance: true
+    freeze_variance: true
+    initial_variance: 100.0
+trainer_params:
+  gradient_clipping: null
+  _hopt:
+    gradient_clipping:
+      values: [null]
+  use_gradient_normalizer: true
+  variance_scheduler_type: exponential
+  variance_scheduler_params:
+    _hopt:
+      min_variance:
+        distribution: log_uniform_values
+        min: 0.0001
+        max: 1.0
+  delta_scheduler_type: exponential
+  delta_scheduler_params:
+    _hopt:
+      final_delta:
+        distribution: log_uniform_values
+        min: 0.001
+        max: 10.0
+criterion_params:
+  xent_weight: 0.0
+  douce_weight: 1.0
+  logits_batchnorm: true
+  _hopt:
+    douce_delta:
+      distribution: log_uniform_values
+      min: 0.001
+      max: 10.0
+    douce_smoothing:
+      min: 0.0
+      max: 0.2
