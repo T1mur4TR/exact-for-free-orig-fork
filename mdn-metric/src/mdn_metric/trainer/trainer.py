@@ -7,7 +7,7 @@ from .._workarounds import OptimizerCallback
 from ..config import prepare_config, ConfigError
 from .gradient import GradientNormalizer
 from .optimizer import SGDOptimizer, RMSpropOptimizer, AdamOptimizer, AdamWOptimizer, SamOptimizer
-from .scheduler import StepScheduler, MultiStepScheduler, PlateauScheduler, WarmupScheduler, ExponentialScheduler
+from .scheduler import StepScheduler, MultiStepScheduler, PlateauScheduler, WarmupScheduler, ExponentialScheduler, CosineScheduler
 from .variance_scheduler import ExponentSTDSchedulerCallback
 from .weight_kld_scheduler import KLDSchedulerCallback
 from .delta_scheduler import ExponentDeltaSchedulerCallback
@@ -28,7 +28,8 @@ class Trainer:
         "step": StepScheduler,
         "multistep": MultiStepScheduler,
         "plateau": PlateauScheduler,
-        "exponential": ExponentialScheduler
+        "exponential": ExponentialScheduler,
+        "cosine": CosineScheduler
     }
 
     VARIANCE_SCHEDULERS = {

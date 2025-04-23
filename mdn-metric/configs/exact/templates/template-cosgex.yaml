@@ -4,6 +4,7 @@ model_params:
     freeze_variance: true
     initial_variance: 100.0
 trainer_params:
+  scheduler_type: cosine
   gradient_clipping: null
   _hopt:
     gradient_clipping:

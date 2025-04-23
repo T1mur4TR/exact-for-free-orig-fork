@@ -113,3 +113,18 @@ class WarmupScheduler(torch.optim.lr_scheduler._LRScheduler):
         if self.last_epoch > 0:
             self._scheduler.step()
         super().step()
+
+
+class CosineScheduler(torch.optim.lr_scheduler.CosineAnnealingLR):
+    """Configurable LR scheduler."""
+
+    @staticmethod
+    def get_default_config(min_lr=0.):
+        """Get scheduler parameters."""
+        return OrderedDict([
+            ("min_lr", min_lr),
+        ])
+
+    def __init__(self, optimizer, num_epochs, *, minimize_metric=True, config=None):
+        config = prepare_config(self, config)
+        super().__init__(optimizer, num_epochs, config["min_lr"])

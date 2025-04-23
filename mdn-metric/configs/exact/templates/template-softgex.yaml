@@ -24,3 +24,6 @@ criterion_params:
     gex_margin:
       min: 0.0
       max: 10.0
+    gex_smoothing:
+      min: 0.0
+      max: 0.2
