@@ -54,7 +54,7 @@ class Criterion(torch.nn.Module):
                            exact_margin=None, exact_aggregation="mean",
                            exaqoot_weight=0.0, exaqoot_sample_size=256, exaqoot_margin=None,
                            exaqoot_distribution="normal",
-                           gex_weight=0.0, gex_margin=None, gex_smoothing=None,
+                           gex_weight=0.0, gex_margin=None, gex_smoothing=None, gex_use_k_closest=None,
                            douce_weight=0.0, douce_delta=.3, douce_smoothing=0., 
                            douce_soft_labels_correction=None,
                            reloss_weight=0.0):
@@ -99,6 +99,7 @@ class Criterion(torch.nn.Module):
             ("gex_weight", gex_weight),
             ("gex_margin", gex_margin),
             ("gex_smoothing", gex_smoothing),
+            ("gex_use_k_closest", gex_use_k_closest),
             ("douce_weight", douce_weight),
             ("douce_delta", douce_delta),
             ("douce_smoothing", douce_smoothing),
@@ -120,7 +121,7 @@ class Criterion(torch.nn.Module):
         if self._config["exaqoot_weight"] > 0:
             self._exaqoot = self.EXAQOOT_DISTRIBUTIONS[self._config["exaqoot_distribution"]](sample_size=self._config["exaqoot_sample_size"], batch_norm=False, margin=self._config["exaqoot_margin"])
         if self._config["gex_weight"] > 0:
-            self._gex = GEX(batch_norm=False, margin=self._config["gex_margin"], label_smoothing=self._config["gex_smoothing"])
+            self._gex = GEX(batch_norm=False, margin=self._config["gex_margin"], label_smoothing=self._config["gex_smoothing"], use_k_closest=self._config["gex_use_k_closest"])
         if self._config["douce_weight"] > 0:
             self._douce = DOUCE(batch_norm=False, delta=self._config["douce_delta"], label_smoothing=self._config["douce_smoothing"], soft_labels_correction=self._config["douce_soft_labels_correction"])
         self.distribution = None
