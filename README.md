@@ -1,20 +1,5 @@
-#### ⚠️ This is an official and supported fork of the [original](https://github.com/tinkoff-ai/exact) EXACT implementation. The original repository is on freeze and will not be update further.
-# EXACT: How to Train Your Accuracy
-The official implementation of the first multi-class accuracy relaxation loss (i.e. 0-1 loss).
-
-🚀 The paper was published in [Pattern Recognition Letters](https://authors.elsevier.com/sd/article/S0167-8655(24)00203-4) (2024). 🚀
-
-The short version of the paper was presented at the [TAG in Machine Learning ICML Workshop (2022)](https://icml.cc/virtual/2022/workshop/13447).
-
-The preprint is available at [arXiv](https://arxiv.org/pdf/2205.09615.pdf).
-
-## Evaluation Results
-<img src="docs/tabular.jpg">
-
-<img src="docs/vision.jpg">
-
-## Loss implementation
-The stand-alone implementation of the EXACT objective can be found in `exact/src/exact_pytorch/exact.py`.
+#### Fork of the original implementation of the paper "EXACT: How to Train Your Accuracy" for the upcoming paper "EXACT for Free: A Robust Accuracy Optimization Method for Deep Learning and Beyond"
+# EXACT for Free: A Robust Accuracy Optimization Method for Deep Learning and Beyond
 
 ## UCI Datasets
 
