@@ -40,7 +40,8 @@ class Criterion(torch.nn.Module):
     }
 
     @staticmethod
-    def get_default_config(use_softmax=True, logits_batchnorm=False, xent_weight=1.0, xent_smoothing=0.0,
+    def get_default_config(use_softmax=True, logits_batchnorm=False, logits_norm_type="batch",
+                           xent_weight=1.0, xent_smoothing=0.0,
                            hinge_weight=0.0, hinge_margin=1.0,
                            bce_weight=0.0, bce_log_prob=True,
                            magnetic_weight=0.0,
@@ -67,6 +68,7 @@ class Criterion(torch.nn.Module):
         return OrderedDict([
             ("use_softmax", use_softmax),
             ("logits_batchnorm", logits_batchnorm),
+            ("logits_norm_type", logits_norm_type),
             ("xent_weight", xent_weight),
             ("xent_smoothing", xent_smoothing),
             ("hinge_weight", hinge_weight),
@@ -148,7 +150,14 @@ class Criterion(torch.nn.Module):
             raise ValueError("Expected embeddings with shape (B, D) or (B, N, D), where N is ensemble size.")
         loss = 0
         if (logits is not None) and self._config["logits_batchnorm"]:
-            logits = self._batchnorm0d(logits)
+            if self._config["logits_norm_type"] == "batch":
+                logits = self._batchnorm0d(logits)  
+            elif self._config["logits_norm_type"] == "rms":
+                logits = self._rmsnorm(logits)
+            elif self._config["logits_norm_type"] == "batchrms":
+                logits = self._batchrmsnorm(logits)
+            else:
+                raise ValueError(f"Unknown logits_norm_type (logits_norm_type = {self._config["logits_norm_type"]})")
         if self._config["xent_weight"] != 0:
             if logits is None:
                 raise ValueError("Need logits for Xent loss.")
@@ -347,6 +356,14 @@ class Criterion(torch.nn.Module):
     def _batchnorm0d(logits):
         scale = logits.std()
         return (logits - logits.mean()) / (1e-6 + scale)
+    
+    @staticmethod
+    def _rmsnorm(logits):
+        return torch.nn.functional.rms_norm(logits, logits.shape[-1:])
+
+    @staticmethod
+    def _batchrmsnorm(logits):
+        return torch.nn.functional.rms_norm(logits, logits.shape)
 
     def _exact_aggregate(self, probs):
         if self._config["exact_aggregation"] == "mean":
