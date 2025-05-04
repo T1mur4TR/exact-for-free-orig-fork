@@ -157,7 +157,7 @@ class Criterion(torch.nn.Module):
             elif self._config["logits_norm_type"] == "batchrms":
                 logits = self._batchrmsnorm(logits)
             else:
-                raise ValueError(f"Unknown logits_norm_type (logits_norm_type = {self._config["logits_norm_type"]})")
+                raise ValueError(f"Unknown logits_norm_type (logits_norm_type = {self._config['logits_norm_type']})")
         if self._config["xent_weight"] != 0:
             if logits is None:
                 raise ValueError("Need logits for Xent loss.")
@@ -359,11 +359,11 @@ class Criterion(torch.nn.Module):
     
     @staticmethod
     def _rmsnorm(logits):
-        return torch.nn.functional.rms_norm(logits, logits.shape[-1:])
-
+        return logits / torch.sqrt(1e-6 + torch.mean(torch.square(logits), dim=-1, keepdim=True))
+    
     @staticmethod
     def _batchrmsnorm(logits):
-        return torch.nn.functional.rms_norm(logits, logits.shape)
+        return logits / torch.sqrt(1e-6 + torch.mean(torch.square(logits)))
 
     def _exact_aggregate(self, probs):
         if self._config["exact_aggregation"] == "mean":
