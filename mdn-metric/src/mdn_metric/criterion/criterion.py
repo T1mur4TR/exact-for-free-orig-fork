@@ -13,7 +13,7 @@ from .multisim import MultiSimilarityLoss
 from .proxynca import ProxyNCALoss
 from .relaxation import Relaxed01Loss
 from .polyloss import Poly1CrossEntropyLoss
-from .exaqoot import EXAQOOT, CauchyEXAQOOT
+from .exaqoot import EXAQOOT, CauchyEXAQOOT, GumbelEXAQOOT
 from .gex import GEX
 from .douce import DOUCE
 
@@ -35,7 +35,8 @@ class Criterion(torch.nn.Module):
 
     EXAQOOT_DISTRIBUTIONS = {
         "normal": EXAQOOT,
-        "cauchy": CauchyEXAQOOT
+        "cauchy": CauchyEXAQOOT,
+        "gumbel": GumbelEXAQOOT
     }
 
     @staticmethod

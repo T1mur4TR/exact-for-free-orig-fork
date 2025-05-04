@@ -1,6 +1,8 @@
 import torch
 from .common import logits_deltas
 
+from math import log
+
 class EXAQOOT(torch.nn.Module):
     def __init__(self, sample_size=256, batch_norm=True, sigma=1., margin=None, reduction='mean'):
         super().__init__()
@@ -50,6 +52,35 @@ class CauchyEXAQOOT(torch.nn.Module):
         if self._margin is not None:
             deltas = torch.clip(deltas, max=self._margin)
         loss = -torch.mean(torch.prod(invpi * torch.arctan(self._shifts + deltas.unsqueeze(-1) / sigma) + .5, dim=-2), dim=-1)
+        if self._reduction == 'mean':
+            loss = loss.mean()
+        elif self._reduction == 'sum':
+            loss = loss.sum()
+        return 1. + loss
+    
+class GumbelEXAQOOT(torch.nn.Module):
+    def __init__(self, sample_size=256, batch_norm=True, sigma=1., margin=None, reduction='mean', eps=1e-8):
+        super().__init__()
+        self._batch_norm = batch_norm
+        self._sigma = sigma
+        self._margin = margin
+        self._reduction = reduction
+        self._shifts = -torch.log(-torch.log(torch.linspace(0., 1., sample_size + 2)[1:-1]))
+        threshold = -1. / log(eps)
+        stable_exp_neg_reciprocal_x = lambda x: torch.where(x > threshold, torch.exp(-torch.reciprocal(x)), x / threshold * eps)
+        self._stable_exp_neg_exp_neg = lambda x: torch.where(torch.signbit(x), stable_exp_neg_reciprocal_x(torch.exp(x)), torch.exp(-torch.exp(-x)))
+
+    def forward(self, logits, labels, sigma=None):
+        if sigma is None:
+            sigma = self._sigma
+        if self._shifts.device != logits.device:
+            self._shifts = self._shifts.to(logits.device)
+        if self._batch_norm:
+            logits = torch.nn.functional.batch_norm(logits, None, None, training=True)
+        deltas = logits_deltas(logits, labels)
+        if self._margin is not None:
+            deltas = torch.clip(deltas, max=self._margin)
+        loss = -torch.mean(torch.prod(self._stable_exp_neg_exp_neg(self._shifts + deltas.unsqueeze(-1) / sigma) + .5, dim=-2), dim=-1)
         if self._reduction == 'mean':
             loss = loss.mean()
         elif self._reduction == 'sum':
