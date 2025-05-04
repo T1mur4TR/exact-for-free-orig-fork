@@ -1,11 +1,12 @@
 import torch
 
 class GEX(torch.nn.Module):
-    def __init__(self, batch_norm=True, sigma=1., margin=None, reduction='mean', label_smoothing=None, use_k_closest=None):
+    def __init__(self, batch_norm=True, sigma=1., margin=None, cap=None, reduction='mean', label_smoothing=None, use_k_closest=None):
         super().__init__()
         self._batch_norm = batch_norm
         self._sigma = sigma
         self._margin = margin
+        self._cap = cap
         self._reduction = reduction
         self._smoothing_factor = .5 / (1. - label_smoothing) if label_smoothing is not None else None
         self._use_k_closest = use_k_closest
@@ -24,11 +25,11 @@ class GEX(torch.nn.Module):
                 indices = torch.argsort(diffs, dim=-1)[:, :self._use_k_closest + 1]
                 labels = torch.zeros_like(labels)
             logits = logits.take_along_dim(indices, dim=-1)
-        if self._margin is not None:
+        if self._margin is not None or self._cap is not None:
             if logits.shape == labels.shape:
-                logits = torch.clip(logits - (logits * labels).sum(dim=-1, keepdim=True), min=-self._margin)
+                logits = torch.clip(logits - (logits * labels).sum(dim=-1, keepdim=True), min=-self._margin, max=self._cap)
             else:
-                logits = torch.clip(logits - logits.take_along_dim(labels.unsqueeze(-1), -1), min=-self._margin)
+                logits = torch.clip(logits - logits.take_along_dim(labels.unsqueeze(-1), -1), min=-self._margin, max=self._cap)
         probs = torch.softmax(logits / sigma, dim=-1)
         if logits.shape == labels.shape:
             loss = -(probs * labels).sum(dim=-1)
